@@ -9,30 +9,32 @@
 #include <stdlib.h>
 
 /** @brief Enumeration for the pieces, black==lowercase, white==uppercase */
-enum pieces {PAWN,ROOK,KNIGHT,BISHOP,QUEEN,KING,pawn,rook,knight,bishop,queen,king,EPTY};
+typedef enum pieces {PAWN,ROOK,KNIGHT,BISHOP,QUEEN,KING,pawn,rook,knight,bishop,queen,king,EPTY} PIECES;
 /** @brief Color enum */
-enum color {WHITE,BLACK,EMPTY};
+typedef enum color {WHITE,BLACK,EMPTY} COLOR;
+/** @brief White/Black KING in check */
+typedef enum chk {WHITEKINGCHK=1,BLACKKINGCHK} CHK;
 /** @brief TABLE type */
 typedef struct _TABLE
 {
-    enum pieces piece; /**< piece enum */
-    enum color color;  /**< color enum */
+    PIECES piece; /**< piece enum */
+    COLOR color;  /**< color enum */
 } TABLE;
 /** @brief PIECE type */
 typedef struct _PIECE
 {
-    enum pieces type;
+    PIECES type;
     int col; /**< TABLE column */
     int row; /**< TABLE row */
 } PIECE;
 /** @brief GAME type list */
 typedef struct _GAME
 {
-    enum color lap; /**< Chess game round */
+    COLOR lap; /**< Chess game round */
     PIECE from;     /**< Moved from */
     PIECE where;    /**< Moved to */
     TABLE t[8][8];  /**< Current table */
-    int check;      /**< Checked? */
+    int check;      /**< Checked? 1:yes */
     struct _GAME *next; /**< C list */
 } GAME;
 /** @brief DIRECTION type */
@@ -55,13 +57,14 @@ void TableINI(GAME *step);
 void WriteOut(GAME *step);
 void WriteOutTable(enum pieces piece);
 
-void GetStep(GAME *step);
+char GetStep(GAME *step);
 
 void Move(GAME *step);
 int ValidMove(GAME *step);
 int CalculateMaxMove(GAME *step,enum pieces piece);
 void GetMaxDirections(UnaryFunc FuncCol,UnaryFunc FuncRow,GAME *step,int *legitmove);
 int CheckForKingCheck(GAME *step);
+void CheckForCheckMate(GAME *step,char *over);
 
 int Increment(int a);
 int Decrement(int a);
