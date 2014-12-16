@@ -66,8 +66,8 @@ void WriteOut(GAME *step)
     {
         if(i==0)
         {
-            printf("   aa bb cc dd ee ff gg hh\n"); /*Header*/
-            printf("   -----------------------\n");
+            printf("  |-A-|-B-|-C-|-D-|-E-|-F-|-G-|-H-|\n"); /*Header*/
+            printf("--+---+---+---+---+---+---+---+---+--\n");
         }
         for(j=0; j<8; j++)
         {
@@ -76,8 +76,16 @@ void WriteOut(GAME *step)
                 printf("%d |",i+1); /*Side*/
             }
             WriteOutTable(step->t[j][i].piece);
+            if(j==7)
+            {
+                printf(" %d",i+1); /*Side*/
+            }
         }
-        printf("\n\n");
+        printf("\n--+---+---+---+---+---+---+---+---+--\n");
+        if(i==7)
+        {
+            printf("  |-A-|-B-|-C-|-D-|-E-|-F-|-G-|-H-|\n\n"); /*Footer*/
+        }
     }
     if(step->lap == WHITE) printf("Current color: WHITE\n");
     if(step->lap == BLACK) printf("Current color: BLACK\n");
@@ -93,43 +101,43 @@ void WriteOutTable(enum pieces piece)
     switch(piece)
     {
     case PAWN:
-            printf("#P");
+            printf("#WP");
         break;
     case ROOK:
-        printf("#R");
+        printf("#WR");
         break;
     case KNIGHT:
-        printf("#K");
+        printf("#WK");
         break;
     case BISHOP:
-        printf("#B");
+        printf("#WB");
         break;
     case QUEEN:
-        printf("#Q");
+        printf("#WQ");
         break;
     case KING:
-        printf("#K");
+        printf("#WK");
         break;
     case pawn:
-        printf("#p");
+        printf("#Bp");
         break;
     case rook:
-        printf("#r");
+        printf("#Br");
         break;
     case knight:
-        printf("#k");
+        printf("#Bk");
         break;
     case bishop:
-        printf("#b");
+        printf("#Bb");
         break;
     case queen:
-        printf("#q");
+        printf("#Bq");
         break;
     case king:
-        printf("#k");
+        printf("#Bk");
         break;
     case EPTY:
-        printf("__");
+        printf("___");
         break;
     }
     printf("|");
@@ -138,10 +146,12 @@ void WriteOutTable(enum pieces piece)
 /**
  * @brief Handles input coordinates
  * @param [out] step GAME type, sets FROM-TO coordinates
+ * @return if player entered r then regen, if q quit
  */
-void GetStep(GAME *step)
+char GetStep(GAME *step)
 {
     int valid;
+    char temp; /*temp*/
     char from_char; /*temp*/
     int from_number; /*temp*/
     char to_char; /*temp*/
@@ -151,8 +161,25 @@ void GetStep(GAME *step)
         fflush(stdin);
         printf("From:  ");
         scanf("%c",&from_char);
+        if(from_char=='r')
+        {
+            step->lap = WHITE; /* First round white */
+            step->check = 0;   /* not in check */
+            TableINI(step);
+            step->from.col  = step->from.row  = 0;
+            step->where.col = step->where.row = 0;
+            step->from.type = EPTY;
+            return 'y'; /*do not exit from while*/
+        }
+        if(from_char=='q')
+        {
+            step->from.col  = step->from.row  = 0;
+            step->where.col = step->where.row = 0;
+            step->from.type = EPTY;
+            return 'q'; /*exit from while*/
+        }
         scanf("%d",&from_number);
-        fflush(stdin);
+        scanf("%c",&temp); /* catch \n or separator */
         printf("Where: ");
         scanf("%c",&to_char);
         scanf("%d",&to_number);
@@ -185,6 +212,7 @@ void GetStep(GAME *step)
     step->where.col = to_char;
     step->where.row = to_number;
     step->from.type = step->t[(int)from_char][from_number].piece; /*Selected piece*/
+    return 'y'; /*do not exit from while*/
 }
 /*-------------MOVES---------------*/
 /**
@@ -193,17 +221,19 @@ void GetStep(GAME *step)
  */
 void Move(GAME *step)
 {
+    TABLE tempFrom;
+    TABLE tempWhere;
     if(step->lap == step->t[step->from.col][step->from.row].color && ValidMove(step))
     {
         /*OK*/
-        TABLE tempFrom = step->t[step->from.col][step->from.row];
-        TABLE tempWhere = step->t[step->where.col][step->where.row];
+        tempFrom = step->t[step->from.col][step->from.row];
+        tempWhere = step->t[step->where.col][step->where.row];
         step->t[step->where.col][step->where.row] = step->t[step->from.col][step->from.row]; /*Copying piece color and type*/
         step->t[step->from.col][step->from.row].piece = EPTY;
         step->t[step->from.col][step->from.row].color = EMPTY;
-        /*Moved with king into check or still in check*/
-        if ( ((tempFrom.piece == KING || tempFrom.piece == king) && CheckForKingCheck(step)) ||
-                (step->check && CheckForKingCheck(step)) )
+        /*Moved with king into check or still in check or player moved and check*/
+        if ((step->lap==WHITE&&CheckForKingCheck(step)==WHITEKINGCHK)||
+                (step->lap==BLACK&&CheckForKingCheck(step)==BLACKKINGCHK))
         {
             step->t[step->from.col][step->from.row]   = tempFrom; /*Undo move*/
             step->t[step->where.col][step->where.row] = tempWhere;
@@ -439,6 +469,7 @@ void GetMaxDirections(UnaryFunc FuncCol,UnaryFunc FuncRow,GAME *step,int *legitm
 /**
  * @brief Checks if any king is in check
  * @param [in] step GAME type
+ * @return enum chk if any king is in check
  * @details Resimulates game, with moving where: to kings
  */
 int CheckForKingCheck(GAME *step)
@@ -480,7 +511,7 @@ int CheckForKingCheck(GAME *step)
             tempgame.from.col = j;
             tempgame.from.row = i;
             if(BLACK == tempgame.t[j][i].color) tempgame.from.type = tempgame.t[j][i].piece;
-            if(BLACK == tempgame.t[j][i].color && ValidMove(&tempgame)) return 1; /*White KING in check*/
+            if(BLACK == tempgame.t[j][i].color && ValidMove(&tempgame)) return WHITEKINGCHK; /*White KING in check*/
         }
     }
     /*Secondly with BLACK KING*/
@@ -494,10 +525,71 @@ int CheckForKingCheck(GAME *step)
             tempgame.from.col = j;
             tempgame.from.row = i;
             if(WHITE == tempgame.t[j][i].color) tempgame.from.type = tempgame.t[j][i].piece;
-            if(WHITE == tempgame.t[j][i].color && ValidMove(&tempgame)) return 1; /*Black KING in check*/
+            if(WHITE == tempgame.t[j][i].color && ValidMove(&tempgame)) return BLACKKINGCHK; /*Black KING in check*/
         }
     }
     return 0;
+}
+/**
+ * @brief Checks if the check was a checkmate
+ * @param [in] step GAME type
+ * @param [out] over sets to 'y' when user wants to play again
+ * @details Resimulates game, with moving everywhere and checks if something can prevent check
+ */
+void CheckForCheckMate(GAME *step,char *over)
+{
+    int i,j,k,l;
+    GAME tempgame = *step;
+    TABLE tempFrom;
+    TABLE tempWhere;
+    for(i=0; i<8; i++)
+    {
+        for(j=0; j<8; j++)
+        {
+            tempgame.from.col = j;
+            tempgame.from.row = i;
+            tempgame.from.type = tempgame.t[tempgame.from.col][tempgame.from.row].piece;
+            for(k=0; k<8; k++)
+            {
+                for(l=0; l<8; l++)
+                {
+                    tempgame.where.col = l;
+                    tempgame.where.row = k;
+                    if(tempgame.lap == tempgame.t[tempgame.from.col][tempgame.from.row].color && ValidMove(&tempgame))
+                    {
+                        /*OK*/
+                        tempFrom = tempgame.t[tempgame.from.col][tempgame.from.row];
+                        tempWhere = tempgame.t[tempgame.where.col][tempgame.where.row];
+                        tempgame.t[tempgame.where.col][tempgame.where.row] = tempgame.t[tempgame.from.col][tempgame.from.row]; /*Copying piece color and type*/
+                        tempgame.t[tempgame.from.col][tempgame.from.row].piece = EPTY;
+                        tempgame.t[tempgame.from.col][tempgame.from.row].color = EMPTY;
+                        /*Moved with king into check or still in check*/
+                        if ((tempgame.lap==WHITE&&CheckForKingCheck(&tempgame)==WHITEKINGCHK)||
+                                (tempgame.lap==BLACK&&CheckForKingCheck(&tempgame)==BLACKKINGCHK))
+                        {
+                            tempgame.t[tempgame.from.col][tempgame.from.row]   = tempFrom; /*Undo move*/
+                            tempgame.t[tempgame.where.col][tempgame.where.row] = tempWhere;
+                        }
+                        else return; /*there is a possible move*/
+                    }
+                }
+            }
+        }
+    }
+    /*There was not a possible move*/
+    system("cls"); /* danger!! */
+    WriteOut(step);
+    printf("CHECKMATE!\n");
+    if(step->lap==BLACK) printf("White won!\n");
+    if(step->lap==WHITE) printf("Black won!\n ");
+    printf("Play again?[y/n]");
+    scanf("%c",over);
+    if(*over=='y'||*over=='Y') /* reset everything */
+    {
+        step->lap = WHITE; /* First round white */
+        step->check = 0;   /* not in check */
+        TableINI(step);
+    }
 }
 int Increment(int a)
 {
