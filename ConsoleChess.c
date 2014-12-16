@@ -11,7 +11,7 @@
  *  @version   1.0
  *  @date      Last Modification: 2014.12.16.
  *
- * [GitHub Project README](https://github.com/kote2ster/ "GitHub Project")
+ * [GitHub Project README](https://github.com/kote2ster/ConsoleChess "GitHub Project")
  *
  * @section board_sec BOARD:
  *
