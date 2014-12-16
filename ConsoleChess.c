@@ -29,21 +29,24 @@
 int main(void)
 {
     GAME *step;
-    /*    int i=0; */
-    /*    int j=0; */
-    int end=0;
+    char over='y';
     step = (GAME*)malloc(sizeof(GAME));
     step->lap = WHITE; /* First round white */
     step->check = 0;   /* not in check */
     TableINI(step);
+    printf("enter r to restart, q to quit\n");
     do
     {
         WriteOut(step);
-        GetStep(step);
+        over = GetStep(step);
         Move(step);
-        if(!step->check && CheckForKingCheck(step)) step->check = 1;
+        if(!step->check && CheckForKingCheck(step))
+        {
+            step->check = 1;
+            CheckForCheckMate(step,&over);
+        }
         system("cls"); /* danger!! */
     }
-    while(!end);
+    while(over=='y'||over=='Y');
     return 0;
 }
