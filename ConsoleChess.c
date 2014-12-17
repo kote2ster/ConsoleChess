@@ -26,7 +26,7 @@
  * 07 17 27 37 47 57 67 77     a8 b8 c8 d8 e8 f8 g8 h8
  </PRE>
  */
-int main(void)
+int main(int argc, char *argv[])
 {
     GAME *game,*step;
     enum menucntr over=DONTEXIT;
