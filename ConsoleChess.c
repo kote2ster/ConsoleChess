@@ -8,8 +8,8 @@
  * @mainpage Simple Console Chess
  * @section intro_sec Introduction
  *  @author    Ákos Köte
- *  @version   1.0
- *  @date      Last Modification: 2014.12.16.
+ *  @version   1.1
+ *  @date      Last Modification: 2014.12.17.
  *
  * [GitHub Project README](https://github.com/kote2ster/ConsoleChess "GitHub Project")
  *
@@ -28,25 +28,65 @@
  */
 int main(void)
 {
-    GAME *step;
-    char over='y';
+    GAME *game,*step;
+    enum menucntr over=DONTEXIT;
+    enum chk Control;
+    char temp;
     step = (GAME*)malloc(sizeof(GAME));
-    step->lap = WHITE; /* First round white */
-    step->check = 0;   /* not in check */
-    TableINI(step);
-    printf("enter r to restart, q to quit\n");
+    game = CreateList();
+    *step = *game;
+    initscr();
+    resize_term(26,70);
+    printw("enter r to restart, q to quit, u to undo move");
     do
     {
-        WriteOut(step);
-        over = GetStep(step);
-        Move(step);
-        if(!step->check && CheckForKingCheck(step))
+        if (over==REGEN) /*Regenerate*/
         {
-            step->check = 1;
-            CheckForCheckMate(step,&over);
+            DeleteList(game);
+            game = CreateList();
+            *step = *game;
         }
-        system("cls"); /* danger!! */
+        WriteOut(game);
+        over = GetStep(step);
+        if(over==DONTEXIT)
+        {
+            Control = Move(step);
+            if(Control==INVALIDMOVE)
+            {
+                if(step->check)
+                    printw("In Check!\n");
+                printw("Invalid move\n");
+                getch();
+            }
+            else if(!step->check && Control!=NOTINCHECK)
+            {
+                step->check = 1;
+                over = CheckForCheckmate(step);
+                if(over==CHECKMATE)
+                {
+                    clear();
+                    WriteOut(step);
+                    printw("CHECKMATE!\n");
+                    if(step->lap==BLACK) printw("White won!\n");
+                    if(step->lap==WHITE) printw("Black won!\n ");
+                    printw("Play again?[y/n]");
+                    scanw("%c",&temp);
+                    if(temp=='y'||temp=='Y') over = REGEN;
+                    else over = QUIT;
+                }
+            }
+            if(Control!=INVALIDMOVE)
+            {
+                InsertAtEnd(game,step);
+            }
+        }
+        if(over==UNDO)
+        {
+            RemoveAtEnd(game,step);
+        }
+        clear();
     }
-    while(over=='y'||over=='Y');
+    while(over!=QUIT);
+    endwin();
     return 0;
 }

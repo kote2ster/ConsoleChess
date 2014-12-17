@@ -30,7 +30,11 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add directory="$(#pdcurses.include)" />
 		</Compiler>
+		<Linker>
+			<Add library="$(#pdcurses.lib)\pdcurses.a" />
+		</Linker>
 		<Unit filename="ConsoleChess.c">
 			<Option compilerVar="CC" />
 		</Unit>
